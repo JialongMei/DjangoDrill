@@ -40,6 +40,8 @@ class Book(models.Model):
     language = models.ForeignKey(Language, on_delete=models.RESTRICT, null=True)
     def __str__(self):
         return self.title
+    class Meta:
+        ordering = ['title']
     def get_absolute_url(self):
         return reverse('book-detail', args=[str(self.id)])
     def display_genre(self):
