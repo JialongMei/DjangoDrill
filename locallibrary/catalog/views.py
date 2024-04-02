@@ -1,5 +1,25 @@
 from django.shortcuts import render
 from .models import Author, Book, BookInstance, Genre
+from django.shortcuts import HttpResponse, Http404
+from django.core.exceptions import *
+from django.views import generic
+from django.shortcuts import get_object_or_404
+def searchWords(request):
+    if request.method == 'POST':
+        search = request.POST.get('textfield',None)
+        try:
+            genre_count = Genre.objects.filter(name__contains=search).count()
+        except Genre.DoesNotExist:
+            genre_count = 0
+
+        try:
+            book_count = Book.objects.filter(title__contains=search).count()
+        except Book.DoesNotExist:
+            book_count = 0
+
+        result = genre_count + book_count
+        html = "<H1>Keyword Apperance times: {}</H1>".format(result)
+        return HttpResponse(html)
 
 def index(request):
     num_books = Book.objects.all().count()
@@ -17,3 +37,36 @@ def index(request):
     }
 
     return render(request, 'index.html', context=context)
+
+class BookListView(generic.ListView):
+    model = Book
+    context_object_name = 'book_list'
+    queryset = Book.objects.filter(title__icontains='war')[:5]
+    template_name = 'books/my_arbitrary_template_name_list.html'
+
+class BookListView(generic.ListView):
+    model = Book
+
+    def get_queryset(self):
+        return Book.objects.filter(title__icontains='war')[:5] # Get 5 books containing the title war
+
+class BookListView(generic.ListView):
+    model = Book
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get the context
+        context = super(BookListView, self).get_context_data(**kwargs)
+        # Create any data and add it to the context
+        context['some_data'] = 'This is just some data'
+        return context
+
+class BookDetailView(generic.DetailView):
+    model = Book
+    def book_detail_view(request, primary_key):
+        try:
+            book = Book.objects.get(pk=primary_key)
+        except Book.DoesNotExist:
+            raise Http404('Book does not exist')
+
+        return render(request, 'catalog/book_detail.html', context={'book': book})
+
